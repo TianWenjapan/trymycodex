@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+python_vnev/
+.venv/
+venv/
+*.db
+*.db-*
+*.sqlite*
+*.log
+*.bak
+.env
+.env.*
+!.env.example
+*.pem
+*.key
