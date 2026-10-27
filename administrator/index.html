@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>请求日志管理后台</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f6f8;
+      color: #333;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 22px;
+    }
+    .toolbar {
+      margin-bottom: 16px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #d0d0d0;
+      border-radius: 4px;
+      background: #fff;
+    }
+    button:hover {
+      background: #eef2ff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid #e5e5e5;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th {
+      background: #f0f2f5;
+      font-weight: 600;
+    }
+    tbody tr:nth-child(even) {
+      background: #fafbfc;
+    }
+    td.body, td.query {
+      font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+      word-break: break-all;
+    }
+    .error {
+      color: #c0392b;
+      margin-top: 16px;
+    }
+    .empty {
+      color: #888;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>请求日志管理后台</h1>
+  <div class="toolbar">
+    <button id="refresh">刷新</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>方法</th>
+        <th>路径</th>
+        <th>查询参数</th>
+        <th>请求体</th>
+        <th>时间</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="status"></div>
+
+  <script>
+    const API_URL = "/api/logs";
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function renderLogs(logs) {
+      const tbody = document.getElementById("tbody");
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = "";
+        setStatus("暂无数据", false);
+        return;
+      }
+      tbody.innerHTML = logs
+        .map(
+          (log) => `
+        <tr>
+          <td>${escapeHtml(log.id)}</td>
+          <td>${escapeHtml(log.method)}</td>
+          <td>${escapeHtml(log.path)}</td>
+          <td class="query">${escapeHtml(log.query_params)}</td>
+          <td class="body">${escapeHtml(log.body)}</td>
+          <td>${escapeHtml(log.created_at)}</td>
+        </tr>`
+        )
+        .join("");
+      setStatus(`共 ${logs.length} 条记录`, false);
+    }
+
+    function setStatus(message, isError) {
+      const el = document.getElementById("status");
+      el.textContent = message;
+      el.className = isError ? "error" : "empty";
+    }
+
+    async function loadLogs() {
+      setStatus("加载中…", false);
+      try {
+        const resp = await fetch(API_URL);
+        if (!resp.ok) {
+          throw new Error("HTTP " + resp.status);
+        }
+        const data = await resp.json();
+        renderLogs(data.logs);
+      } catch (err) {
+        setStatus("加载失败：" + err.message + "（请确认后端已启动）", true);
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", loadLogs);
+    window.addEventListener("load", loadLogs);
+  </script>
+</body>
+</html>
